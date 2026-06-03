@@ -1,0 +1,82 @@
+services:
+  # Base de données MySQL 9.4.0
+  zabbix-db:
+    image: mysql:9.6.0
+    container_name: zabbix-db
+    restart: always
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_bin --log-bin-trust-function-creators=1
+    volumes:
+      - ./mysql_data:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: zabbix
+      MYSQL_USER: zabbix
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Serveur Zabbix v7.4
+  zabbix-server:
+    image: zabbix/zabbix-server-mysql:alpine-7.4-latest
+    container_name: zabbix-server
+    restart: always
+    user: root
+    entrypoint: >
+      sh -c "apk add --no-cache curl jq && exec /usr/bin/docker-entrypoint.sh /usr/sbin/zabbix_server -f"
+    ports:
+      - "10051:10051"
+    volumes:
+      - ./Scripts:/var/lib/zabbix/externalscripts
+      - ./zabbix_export:/var/lib/zabbix/export
+    environment:
+      DB_SERVER_HOST: zabbix-db
+      MYSQL_DATABASE: zabbix
+      MYSQL_USER: zabbix
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      TZ: Europe/Paris
+    depends_on:
+      zabbix-db:
+        condition: service_healthy
+
+  # Interface Web Zabbix v7.4
+  zabbix-web:
+    image: zabbix/zabbix-web-nginx-mysql:alpine-7.4-latest
+    container_name: zabbix-web
+    restart: always
+    ports:
+      - "80:8080"
+    environment:
+      ZBX_SERVER_HOST: zabbix-server
+      DB_SERVER_HOST: zabbix-db
+      MYSQL_DATABASE: zabbix
+      MYSQL_USER: zabbix
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      PHP_TZ: Europe/Paris
+    depends_on:
+      zabbix-db:
+        condition: service_healthy
+      zabbix-server:
+        condition: service_started
+
+  # Agent Zabbix v7.4 - Configuré selon votre documentation officielle
+  zabbix-agent:
+    image: zabbix/zabbix-agent2:alpine-7.4-latest
+    container_name: zabbix-agent
+    restart: always
+    privileged: true
+    pid: "host"
+    ports:
+      - "10050:10050"
+    volumes:
+      - /:/host:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+    environment:
+      ZBX_HOSTNAME: "Zabbix server"
+      ZBX_PASSIVESERVERS: "127.0.0.1"
+      TZ: "Europe/Paris"
+    links:
+      - zabbix-server
