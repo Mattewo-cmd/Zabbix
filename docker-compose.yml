@@ -1,5 +1,5 @@
 services:
-  # Base de données MySQL 9.4.0
+  # Base de données MySQL 9.6.0
   zabbix-db:
     image: mysql:9.6.0
     container_name: zabbix-db
@@ -18,9 +18,9 @@ services:
       timeout: 3s
       retries: 10
 
-  # Serveur Zabbix v7.4
+  # Serveur Zabbix v7.4.11
   zabbix-server:
-    image: zabbix/zabbix-server-mysql:alpine-7.4-latest
+    image: zabbix/zabbix-server-mysql:alpine-7.4.11
     container_name: zabbix-server
     restart: always
     user: root
@@ -43,11 +43,13 @@ services:
 
   # Interface Web Zabbix v7.4
   zabbix-web:
-    image: zabbix/zabbix-web-nginx-mysql:alpine-7.4-latest
+    image: zabbix/zabbix-web-nginx-mysql:alpine-7.4.11
     container_name: zabbix-web
     restart: always
+#    expose:
+#      - "8080"
     ports:
-      - "80:8080"
+      - "8080:8080"
     environment:
       ZBX_SERVER_HOST: zabbix-server
       DB_SERVER_HOST: zabbix-db
@@ -55,15 +57,15 @@ services:
       MYSQL_USER: zabbix
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       PHP_TZ: Europe/Paris
+      ZBX_SERVER_NAME: Zabbix server
     depends_on:
       zabbix-db:
         condition: service_healthy
       zabbix-server:
         condition: service_started
 
-  # Agent Zabbix v7.4 - Configuré selon votre documentation officielle
   zabbix-agent:
-    image: zabbix/zabbix-agent2:alpine-7.4-latest
+    image: zabbix/zabbix-agent2:alpine-7.4.11
     container_name: zabbix-agent
     restart: always
     privileged: true
