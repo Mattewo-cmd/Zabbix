@@ -1,23 +1,11 @@
 #!/bin/bash
-
+ENV_FILE="$(dirname "$0")/.env"
+source $ENV_FILE
 # 1. PARAMÈTRES ET CONFIGURATION
 TITLE=$1
 DATE_ALERTE=$2
-REQUESTER_ID={ID_DEMANDEUR}
 EVENT_ID=$3
 ZABBIX_SEVERITY=$4
-
-TOKEN_URL="https://{IP/FQDN_GLPI}/api.php/token"
-TICKET_URL="https://{IP/FQDN_GLPI}/api.php/Assistance/Ticket"
-CLIENT_ID="{CLIENT_ID}"
-CLIENT_SECRET="{CLIENT_SECRET}"
-APIUSERNAME="zabbix"
-APIPASSWORD="{API_PASSWORD}"
-
-# Variables Zabbix
-ZABBIX_API_URL="https://{IP/FQDN_ZABBIX}/api_jsonrpc.php"
-ZABBIX_API_TOKEN="{ZABBIX_API_TOKEN}"
-GLPI_WEB_URL="https://{IP/FQDN_GLPI}/front/ticket.form.php?id="
 
 # Calcul de la criticité selon la sévérité Zabbix
 case "$ZABBIX_SEVERITY" in
