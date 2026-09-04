@@ -2,10 +2,6 @@
 ENV_FILE="$(dirname "$0")/.env"
 source $ENV_FILE
 # 1. PARAMÈTRES ET CONFIGURATION
-#TITLE="test"
-#DATE_ALERTE="test"
-#EVENT_ID="99999"
-#ZABBIX_SEVERITY="Warning"
 TITLE=$1
 DATE_ALERTE=$2
 EVENT_ID=$3
