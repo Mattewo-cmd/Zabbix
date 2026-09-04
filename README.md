@@ -151,10 +151,10 @@ services:
     container_name: zabbix-web
     restart: always
     dns:
-      - 10.100.50.45
-      - 10.100.50.46
+      - {DNS_SERVER}
+      - {DNS_SERVER2}
     dns_search:
-      - cgo.local
+      - {DOMAIN_NAME}
     ports:
       - "8080:8080"
     volumes:
@@ -167,7 +167,7 @@ services:
       MYSQL_USER: zabbix
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       PHP_TZ: Europe/Paris
-      ZBX_SERVER_NAME: SVPL01-ZABBIX-03
+      ZBX_SERVER_NAME: {Server_Name}
       WEB_REAL_IP_FROM: "172.16.0.0/12"
       WEB_REAL_IP_HEADER: "X-Forwarded-For"
     depends_on:
@@ -249,16 +249,16 @@ mkdir -p zabbix_config
 # Redirection de HTTP (80) vers HTTPS (443)
 ```apache
 <VirtualHost *:80>
-    ServerName SVPL01-ZABBIX-03.cgo.local
-    Redirect permanent / https://SVPL01-ZABBIX-03.cgo.local/
+    ServerName {FQDN_Server}
+    Redirect permanent / https://{FQDN_Server}/
 </VirtualHost>
 
 <VirtualHost *:443>
-    ServerName SVPL01-ZABBIX-03.cgo.local
+    ServerName {FQDN_Server}
 
     SSLEngine On
-    SSLCertificateFile /etc/ssl/private/SVPL01-ZABBIX-03.cer
-    SSLCertificateKeyFile /etc/ssl/private/SVPL01-ZABBIX-03.key
+    SSLCertificateFile /etc/ssl/private/{FQDN_Server}.cer
+    SSLCertificateKeyFile /etc/ssl/private/{FQDN_Server}.key
 
     # Configuration du Proxy
     ProxyRequests Off
@@ -275,7 +275,7 @@ mkdir -p zabbix_config
     RequestHeader set X-Forwarded-Port "443"
     # Transmet l'adresse IP réelle de la machine cliente :
     ProxyAddHeaders On
-    RequestHeader set X-Zabbix-Server-URL "https://SVPL01-ZABBIX-03.cgo.local/"
+    RequestHeader set X-Zabbix-Server-URL "https://{FQDN_Server}/"
 </VirtualHost>
 ```
 
