@@ -2,10 +2,15 @@
 ENV_FILE="$(dirname "$0")/.env"
 source $ENV_FILE
 # 1. PARAMÈTRES ET CONFIGURATION
+#TITLE="test"
+#DATE_ALERTE="test"
+#EVENT_ID="99999"
+#ZABBIX_SEVERITY="Warning"
 TITLE=$1
 DATE_ALERTE=$2
 EVENT_ID=$3
 ZABBIX_SEVERITY=$4
+HOSTNAME=$5
 
 # Calcul de la criticité selon la sévérité Zabbix
 case "$ZABBIX_SEVERITY" in
@@ -48,8 +53,8 @@ CREATION_RESP=$(curl -k -s -X POST "$TICKET_URL" \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "'"$TITLE $DATE_ALERTE"'",
-    "content": "'"$TITLE $DATE_ALERTE"'",
+    "name": "'"$TITLE $DATE_ALERTE $HOSTNAME"'",
+    "content": "'"$TITLE $DATE_ALERTE $HOSTNAME"'",
     "category": {
       "id": 36
     },
