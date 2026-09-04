@@ -421,4 +421,41 @@ Ajouter les montages des certificats et de la configuration dans la section `vol
 3. Cliquer sur **Test** pour valider la communication LDAPS chiffrée.
 4. Une fois le test réussi, activer l'authentification LDAP par défaut.
 
+# Création de ticket via l'API de GLPI11 sur une alerte remontée
+
+Cette configuration va permettre, par le biais d'un script et les configurations nécessaires, de créer automatiquement un ticket en rapport à une alerte remontée sur Zabbix.
+
+## 1. Mise en place d'un script
+
+Pour commencer, la mise en place d'un script permettant de créer le ticker est nécessaire, pour cela on va avoir deux fichiers distincts, un fichier nommé `creer_ticket_glpi.sh` et un autre `.env`.
+
+Le fichier `.env` va servir à initialiser des variables bien précise dans le script, ce qui évite de directement de modifier le script.
+
+Ces fichiers seront placés dans le dossier `/opt/zabbix/Scripts`
+## **Fichiers joints avec cette documentation**
+
+## 2. Configuration Zabbix
+
+Sur Zabbix, on va se rendre dans l'onglet `Alerts` > `Scripts`
+
+On va ensuite créer un nouveau script en cliquant sur `Create Script`, on y remplit les informations nécessaires.
+
+* **Name :** `Créer ticker GLPI`
+* **Scope :** `Manual Event Action`
+* **Type :** `Script`
+* **Execute On :** `Zabbix Server`
+* **commands :** `/var/lib/zabbix/externalscripts/creer_ticket_glpi.sh "{EVENT.NAME}" "à {EVENT.TIME} le {EVENT.DATE}" "{EVENT.ID}" "{EVENT.SEVERITY}" "sur {HOST.NAME}"`
+* **Host / User Group :** `All`
+* **Required host permissions :** `Read`
+
+## 3. Tests de création de ticket
+
+Maintenant la configuration faite, on se rend sur le Dashboard, on prend une alerte,  un clic gauche et dans la catégorie `Scripts` il y aura normalement le bouton `Créer un ticket`.
+
+![Ticket GLPI](./ticket_glpi.png)
+
+Cliquer dessus, ensuite un message validera la création du ticket en précisant bien le numéro du ticket.
+
+![Ticket GLPI](./TICKET.png)
+
 # Problématiques lors de la migration de Zabbix 
