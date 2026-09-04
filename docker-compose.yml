@@ -4,7 +4,12 @@ services:
     image: mysql:9.6.0
     container_name: zabbix-db
     restart: always
-    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_bin --log-bin-trust-function-creators=1
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_bin
+      --log-bin-trust-function-creators=1
+      --innodb_buffer_pool_size=1G
+      --skip-name-resolve
     volumes:
       - ./mysql_data:/var/lib/mysql
     environment:
@@ -14,7 +19,7 @@ services:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
-      interval: 5s
+      interval: 15s
       timeout: 3s
       retries: 10
 
@@ -25,18 +30,22 @@ services:
     restart: always
     user: root
     entrypoint: >
-      sh -c "apk add --no-cache curl jq && exec /usr/bin/docker-entrypoint.sh /usr/sbin/zabbix_server -f"
+      sh -c "apk add --no-cache curl jq ca-certificates && update-ca-certificates && exec /usr/bin/docker-entrypoint.sh /usr/sbin/zabbix_server -f"
     ports:
       - "10051:10051"
     volumes:
       - ./Scripts:/var/lib/zabbix/externalscripts
       - ./zabbix_export:/var/lib/zabbix/export
+      - /etc/ssl/private/ROOTCA.cer:/usr/local/share/ca-certificates/ROOTCA.crt:ro
     environment:
       DB_SERVER_HOST: zabbix-db
       MYSQL_DATABASE: zabbix
       MYSQL_USER: zabbix
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       TZ: Europe/Paris
+      ZBX_CACHESIZE: "256M"
+      ZBX_STARTVMWARECOLLECTORS: 10
+      ZBX_STARTPINGERS: 5
     depends_on:
       zabbix-db:
         condition: service_healthy
@@ -46,10 +55,16 @@ services:
     image: zabbix/zabbix-web-nginx-mysql:alpine-7.4.11
     container_name: zabbix-web
     restart: always
-#    expose:
-#      - "8080"
+    dns:
+      - 10.100.50.45
+      - 10.100.50.46
+    dns_search:
+      - cgo.local
     ports:
       - "8080:8080"
+    volumes:
+      - ./zabbix_config/ldap.conf:/etc/openldap/ldap.conf:ro
+      - /etc/ssl/private/ROOTCA.cer:/etc/ssl/certs/ROOTCA.cer:ro
     environment:
       ZBX_SERVER_HOST: zabbix-server
       DB_SERVER_HOST: zabbix-db
@@ -57,7 +72,9 @@ services:
       MYSQL_USER: zabbix
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       PHP_TZ: Europe/Paris
-      ZBX_SERVER_NAME: Zabbix server
+      ZBX_SERVER_NAME: SVPL01-ZABBIX-03
+      WEB_REAL_IP_FROM: "172.16.0.0/12"
+      WEB_REAL_IP_HEADER: "X-Forwarded-For"
     depends_on:
       zabbix-db:
         condition: service_healthy
@@ -70,15 +87,19 @@ services:
     restart: always
     privileged: true
     pid: "host"
+    user: root
+    entrypoint: >
+      sh -c "apk add --no-cache ca-certificates && update-ca-certificates && exec /usr/bin/docker-entrypoint.sh /usr/sbin/zabbix_agent2 -f"
     ports:
       - "10050:10050"
     volumes:
       - /:/host:ro
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
+      - /etc/ssl/private/ROOTCA.cer:/usr/local/share/ca-certificates/ROOTCA.crt:ro
     environment:
       ZBX_HOSTNAME: "Zabbix server"
-      ZBX_PASSIVESERVERS: "127.0.0.1"
+      ZBX_PASSIVESERVERS: "127.0.0.1,172.16.0.0/12"
       TZ: "Europe/Paris"
     links:
       - zabbix-server
